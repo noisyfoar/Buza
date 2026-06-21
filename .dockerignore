@@ -1,0 +1,15 @@
+bin/
+obj/
+Buza.Tests/bin/
+Buza.Tests/obj/
+node_modules/
+test-results/
+playwright-report/
+.vs/
+.git/
+
+database.db
+database.db-shm
+database.db-wal
+server.pid
+*.log

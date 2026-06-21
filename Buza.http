@@ -1,0 +1,21 @@
+@Buza_HostAddress = http://localhost:5179
+
+GET {{Buza_HostAddress}}/api/products
+Accept: application/json
+
+###
+
+GET {{Buza_HostAddress}}/api/settings
+Accept: application/json
+
+###
+
+POST {{Buza_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "login": "admin",
+  "password": "admin123"
+}
+
+###

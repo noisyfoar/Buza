@@ -1,0 +1,12 @@
+bin/
+obj/
+node_modules/
+test-results/
+playwright-report/
+.vs/
+
+database.db
+database.db-shm
+database.db-wal
+server.pid
+*.log
