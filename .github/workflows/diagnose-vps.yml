@@ -43,6 +43,7 @@ jobs:
           set -eu
           test -n "$VPS_HOST"
           test -n "$VPS_USER"
+          sleep 55
           ssh -i "$HOME/.ssh/id_ed25519" -o IdentitiesOnly=yes \
             -o ServerAliveInterval=15 -o ServerAliveCountMax=2 -o ConnectTimeout=10 \
             "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
