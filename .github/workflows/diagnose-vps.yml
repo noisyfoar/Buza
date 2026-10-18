@@ -7,6 +7,7 @@ on:
       - master
     paths:
       - .github/workflows/diagnose-vps.yml
+      - Caddyfile.vps
 
 permissions:
   contents: read
@@ -82,4 +83,8 @@ jobs:
           echo '===== HTTPS port 443 / TLS ====='
           curl -4 -k -v -o /dev/null -w '\nstatus=%{http_code} connect=%{time_connect}s tls=%{time_appconnect}s total=%{time_total}s remote=%{remote_ip}\n' \
             --connect-timeout 5 --max-time 20 "https://$VPS_HOST/" 2>&1
+          echo "curl_exit=$?"
+          echo '===== HTTPS temporary DNS hostname / SNI ====='
+          curl -4 -k -v -o /dev/null -w '\nstatus=%{http_code} connect=%{time_connect}s tls=%{time_appconnect}s total=%{time_total}s remote=%{remote_ip}\n' \
+            --connect-timeout 5 --max-time 20 "https://89-111-152-194.sslip.io/" 2>&1
           echo "curl_exit=$?"
