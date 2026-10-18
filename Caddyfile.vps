@@ -11,6 +11,8 @@
     encode zstd gzip
 
     tls {
+        curves x25519 secp256r1 secp384r1 secp521r1
+
         issuer acme {
             profile shortlived
         }
