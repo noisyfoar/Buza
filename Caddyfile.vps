@@ -1,28 +1,15 @@
 {
     email {$ACME_EMAIL}
-    default_sni {$SITE_ADDRESS}
-    debug
-
-    servers {
-        protocols h1 h2
-    }
 }
 
 {$SITE_ADDRESS} {
     encode gzip
 
     tls {
-        curves x25519 secp256r1 secp384r1 secp521r1
-
         issuer acme {
             profile shortlived
         }
     }
 
-    reverse_proxy app:8080
-}
-
-89-111-152-194.sslip.io {
-    encode gzip
     reverse_proxy app:8080
 }

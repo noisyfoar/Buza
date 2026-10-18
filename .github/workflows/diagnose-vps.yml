@@ -73,13 +73,20 @@ jobs:
       - name: Probe HTTPS from Russian Check-Host nodes
         id: checkhost
         run: |
-          set -eu
-          ip_response=$(curl -fsS --max-time 15 -H 'Accept: application/json' \
+          set +e
+          ip_response=$(curl -sS --max-time 15 -H 'Accept: application/json' \
             'https://check-host.net/check-http?host=https%3A%2F%2F89.111.152.194%2F&node=ru1.node.check-host.net&node=ru2.node.check-host.net&node=ru3.node.check-host.net')
-          domain_response=$(curl -fsS --max-time 15 -H 'Accept: application/json' \
+          ip_status=$?
+          domain_response=$(curl -sS --max-time 15 -H 'Accept: application/json' \
             'https://check-host.net/check-http?host=https%3A%2F%2F89-111-152-194.sslip.io%2F&node=ru1.node.check-host.net&node=ru2.node.check-host.net&node=ru3.node.check-host.net')
-          ip_id=$(printf '%s' "$ip_response" | jq -r .request_id)
-          domain_id=$(printf '%s' "$domain_response" | jq -r .request_id)
+          domain_status=$?
+          ip_id=$(printf '%s' "$ip_response" | jq -r 'select(type == "object") | .request_id // empty' 2>/dev/null)
+          domain_id=$(printf '%s' "$domain_response" | jq -r 'select(type == "object") | .request_id // empty' 2>/dev/null)
+          if [ "$ip_status" -ne 0 ] || [ "$domain_status" -ne 0 ] || [ -z "$ip_id" ] || [ -z "$domain_id" ]; then
+            echo 'Check-Host rate-limited or returned a non-JSON response; continuing with VPS log collection.'
+            printf 'IP response: %s\nSNI response: %s\n' "$ip_response" "$domain_response"
+            exit 0
+          fi
           echo "IP report: https://check-host.net/check-report/$ip_id"
           echo "SNI report: https://check-host.net/check-report/$domain_id"
           sleep 16
