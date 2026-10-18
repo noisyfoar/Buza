@@ -42,7 +42,7 @@ jobs:
           set -eu
           test -n "$VPS_HOST"
           test -n "$VPS_USER"
-          ssh_options="ssh -i $HOME/.ssh/id_ed25519 -o IdentitiesOnly=yes"
+          ssh_options="ssh -i $HOME/.ssh/id_ed25519 -o IdentitiesOnly=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o TCPKeepAlive=yes"
 
           rsync -az --delete \
             --exclude='/.env.vps' \
@@ -55,7 +55,9 @@ jobs:
             -e "$ssh_options" \
             ./ "$VPS_USER@$VPS_HOST:/opt/buza/"
 
-          ssh -i "$HOME/.ssh/id_ed25519" -o IdentitiesOnly=yes "$VPS_USER@$VPS_HOST" \
+          ssh -i "$HOME/.ssh/id_ed25519" -o IdentitiesOnly=yes \
+            -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o TCPKeepAlive=yes \
+            "$VPS_USER@$VPS_HOST" \
             'cd /opt/buza && docker compose --env-file .env.vps -f docker-compose.vps.yml up -d --build'
 
           curl --fail --silent --show-error --retry 24 --retry-delay 5 --retry-all-errors \
