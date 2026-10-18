@@ -19,3 +19,9 @@
 
     reverse_proxy app:8080
 }
+
+# Temporary hostname until the production domain is configured.
+89-111-152-194.sslip.io {
+    encode gzip
+    reverse_proxy app:8080
+}
