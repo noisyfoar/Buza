@@ -57,7 +57,7 @@ public static class DatabaseSeeder
         FoundationText = "Проект развивается при поддержке грантовой программы и направлен на популяризацию национального башкирского ферментированного напитка.",
         FoundationUrl = "https://fasie.ru/",
         FederalProjectUrl = "https://национальныепроекты.рф/",
-        MainImagePath = "/assets/buza-hero.png",
+        MainImagePath = "/assets/buza-hero.webp",
         HeroTitle = "Натуральная буза для энергии, здоровья и традиций каждый день",
         HeroDescription = "Мягкий ферментированный напиток на основе зерна с деликатным вкусом, живой культурой производства и уважением к башкирской гастрономической традиции.",
         ProductHistory = "Буза известна у тюркских народов как питательный напиток из злаков. В Башкортостане ее ценили за насыщенность, мягкий вкус и способность объединять семью за столом.",
@@ -93,7 +93,7 @@ public static class DatabaseSeeder
                 CreatedAt = createdAt,
                 Images =
                 [
-                    new ProductImage { FilePath = "/assets/buza-product.png", CreatedAt = createdAt }
+                    new ProductImage { FilePath = "/assets/buza-product.webp", CreatedAt = createdAt }
                 ]
             },
             new Product
@@ -108,7 +108,7 @@ public static class DatabaseSeeder
                 CreatedAt = createdAt,
                 Images =
                 [
-                    new ProductImage { FilePath = "/assets/buza-hero.png", CreatedAt = createdAt }
+                    new ProductImage { FilePath = "/assets/buza-hero.webp", CreatedAt = createdAt }
                 ]
             }
         ];

@@ -4,8 +4,17 @@ const state = {
   events: []
 };
 
-const fallbackImage = "/assets/buza-product.png";
-const processImage = "/assets/buza-process.png";
+const fallbackImage = "/assets/buza-product.webp";
+const processImage = "/assets/buza-process.webp";
+const optimizedImages = {
+  "/assets/buza-hero.png": "/assets/buza-hero.webp",
+  "/assets/buza-product.png": "/assets/buza-product.webp",
+  "/assets/buza-process.png": "/assets/buza-process.webp"
+};
+
+function imagePath(path) {
+  return optimizedImages[path] || path;
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
   bindNavigation();
@@ -129,7 +138,7 @@ function setActiveNav(path) {
 
 function renderHome() {
   const s = state.settings;
-  const heroImage = s.mainImagePath || "/assets/buza-hero.png";
+  const heroImage = imagePath(s.mainImagePath || "/assets/buza-hero.webp");
   document.getElementById("app").innerHTML = `
     <section class="hero" style="background-image: url('${escapeAttr(heroImage)}')">
       <div class="hero-content">
@@ -173,7 +182,7 @@ function renderProductInfo() {
     ${pageIntro("О продукте", "Буза как национальный напиток", s.productDescription)}
     <section class="section compact">
       <div class="section-inner text-columns">
-        <div class="media-frame"><img src="${escapeAttr(s.mainImagePath || "/assets/buza-hero.png")}" alt="Буза"></div>
+        <div class="media-frame"><img src="${escapeAttr(imagePath(s.mainImagePath || "/assets/buza-hero.webp"))}" alt="Буза"></div>
         <div class="grid">
           ${infoPanel("История продукта", s.productHistory)}
           ${infoPanel("Состав", s.productComposition)}
@@ -186,7 +195,7 @@ function renderProductInfo() {
         <p class="eyebrow">Галерея</p>
         <h2>Визуальные материалы продукта</h2>
         <div class="gallery" style="margin-top: 22px">
-          <img src="${escapeAttr(s.mainImagePath || "/assets/buza-hero.png")}" alt="Буза в бутылке">
+          <img src="${escapeAttr(imagePath(s.mainImagePath || "/assets/buza-hero.webp"))}" alt="Буза в бутылке">
           <img src="${fallbackImage}" alt="Каталожное изображение бузы">
           <img src="${processImage}" alt="Сырье и технология бузы">
         </div>
@@ -233,7 +242,7 @@ function eventPostCard(post) {
         <h2>${escapeHtml(post.title)}</h2>
         <time datetime="${escapeAttr(post.createdAt)}">${new Date(post.createdAt).toLocaleDateString("ru-RU")}</time>
       </div>
-      ${post.images?.length ? `<div class="event-gallery">${post.images.map((image, index) => `<img src="${escapeAttr(image.filePath)}" alt="${escapeAttr(post.title)} — фото ${index + 1}" loading="lazy">`).join("")}</div>` : ""}
+      ${post.images?.length ? `<div class="event-gallery">${post.images.map((image, index) => `<img src="${escapeAttr(imagePath(image.filePath))}" alt="${escapeAttr(post.title)} — фото ${index + 1}" loading="lazy">`).join("")}</div>` : ""}
       <p class="rich-text event-post-content">${escapeHtml(post.content)}</p>
     </article>
   `;
@@ -245,7 +254,7 @@ async function renderProductDetails(id) {
 
   try {
     const product = await api(`/api/products/${id}`);
-    const firstImage = product.images?.[0]?.filePath || fallbackImage;
+    const firstImage = imagePath(product.images?.[0]?.filePath || fallbackImage);
     app.innerHTML = `
       ${pageIntro("Страница товара", product.name, product.shortDescription)}
       <section class="section compact">
@@ -253,7 +262,7 @@ async function renderProductDetails(id) {
           <div>
             <div class="media-frame"><img src="${escapeAttr(firstImage)}" alt="${escapeAttr(product.name)}"></div>
             <div class="gallery" style="margin-top: 14px">
-              ${(product.images || []).map((image) => `<img src="${escapeAttr(image.filePath)}" alt="${escapeAttr(product.name)}">`).join("")}
+              ${(product.images || []).map((image) => `<img src="${escapeAttr(imagePath(image.filePath))}" alt="${escapeAttr(product.name)}">`).join("")}
             </div>
           </div>
           <div class="grid">
@@ -366,7 +375,7 @@ function infoPanel(title, text) {
 function productCard(product) {
   return `
     <article class="product-card">
-      <img src="${escapeAttr(product.imagePath || fallbackImage)}" alt="${escapeAttr(product.name)}">
+      <img src="${escapeAttr(imagePath(product.imagePath || fallbackImage))}" alt="${escapeAttr(product.name)}" loading="lazy">
       <div class="product-body">
         <h3>${escapeHtml(product.name)}</h3>
         <p>${escapeHtml(product.shortDescription)}</p>
