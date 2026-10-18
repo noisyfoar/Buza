@@ -3,7 +3,7 @@
     default_sni {$SITE_ADDRESS}
 
     servers {
-        protocols h1
+        protocols h1 h2
     }
 }
 
@@ -11,6 +11,7 @@
     encode gzip
 
     tls {
+        protocols tls1.2 tls1.2
         curves x25519 secp256r1 secp384r1 secp521r1
 
         issuer acme {
