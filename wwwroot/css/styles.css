@@ -46,6 +46,10 @@ img {
   display: block;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 button,
 input,
 textarea,
@@ -362,6 +366,48 @@ h3 {
   padding: 20px;
 }
 
+.event-post {
+  padding: clamp(20px, 4vw, 34px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 12px 30px rgba(31, 43, 37, 0.08);
+}
+
+.event-post-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.event-post-header h2 {
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+}
+
+.event-post-header time {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+.event-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.event-gallery img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius);
+  object-fit: cover;
+}
+
+.event-post-content {
+  margin: 20px 0 0;
+}
+
 .product-meta {
   display: flex;
   flex-wrap: wrap;
@@ -409,7 +455,6 @@ h3 {
   padding: clamp(20px, 4vw, 34px);
 }
 
-.feedback-form,
 .admin-form {
   display: grid;
   gap: 14px;

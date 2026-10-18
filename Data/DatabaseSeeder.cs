@@ -11,15 +11,23 @@ public static class DatabaseSeeder
         using var scope = services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var environment = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
 
         await db.Database.MigrateAsync();
 
         if (!await db.AdminUsers.AnyAsync())
         {
+            var initialPassword = configuration["Admin:InitialPassword"];
+            if (environment.IsProduction() && (string.IsNullOrWhiteSpace(initialPassword) || initialPassword.Length < 16))
+            {
+                throw new InvalidOperationException("Для первого запуска в Production задайте Admin:InitialPassword длиной не менее 16 символов.");
+            }
+
             db.AdminUsers.Add(new AdminUser
             {
                 Login = "admin",
-                PasswordHash = passwordHasher.Hash("admin123"),
+                PasswordHash = passwordHasher.Hash(string.IsNullOrWhiteSpace(initialPassword) ? "admin123" : initialPassword),
                 Role = "Admin",
                 CreatedAt = DateTime.UtcNow
             });
@@ -60,11 +68,10 @@ public static class DatabaseSeeder
         ProductionSteps = "1. Отбор и подготовка сырья\n2. Термическая обработка зерновой основы\n3. Внесение закваски\n4. Контролируемая ферментация\n5. Охлаждение, фасовка и хранение",
         RawMaterials = "Используются качественные зерновые культуры, питьевая вода и натуральная закваска. Поставщики сырья подбираются с учетом стабильности качества и безопасности.",
         StartupDescription = "Стартап создает современную линейку бузы, объединяя национальную рецептуру, понятную упаковку и удобный формат покупки для городского потребителя.",
-        ProjectGoals = "Популяризировать башкирский напиток, наладить малосерийное производство, собрать обратную связь от покупателей и подготовить продукт к масштабированию.",
+        ProjectGoals = "Популяризировать башкирский напиток, наладить малосерийное производство и подготовить продукт к масштабированию.",
         DevelopmentStages = "Исследование рецептуры, запуск MVP, дегустации, оформление бренда, развитие каталога, выход на партнерские точки продаж.",
         TeamInfo = "Команда проекта объединяет предпринимательский, технологический и маркетинговый опыт. Информация о составе команды может быть обновлена через административную панель.",
         DevelopmentPlans = "Расширение вкусовой линейки, развитие онлайн-заказов, партнерство с локальными магазинами и участие в культурных гастрономических событиях.",
-        FormSuccessMessage = "Спасибо! Ваша заявка успешно отправлена. Мы свяжемся с вами в ближайшее время.",
         UpdatedAt = DateTime.UtcNow
     };
 

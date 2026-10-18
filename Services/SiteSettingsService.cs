@@ -43,7 +43,6 @@ public class SiteSettingsService(ISiteSettingsRepository settings) : ISiteSettin
         siteSettings.DevelopmentStages = dto.DevelopmentStages.Trim();
         siteSettings.TeamInfo = dto.TeamInfo.Trim();
         siteSettings.DevelopmentPlans = dto.DevelopmentPlans.Trim();
-        siteSettings.FormSuccessMessage = dto.FormSuccessMessage.Trim();
         siteSettings.UpdatedAt = DateTime.UtcNow;
 
         await settings.SaveChangesAsync();
@@ -78,7 +77,6 @@ public class SiteSettingsService(ISiteSettingsRepository settings) : ISiteSettin
         DevelopmentStages = settings.DevelopmentStages,
         TeamInfo = settings.TeamInfo,
         DevelopmentPlans = settings.DevelopmentPlans,
-        FormSuccessMessage = settings.FormSuccessMessage,
         UpdatedAt = settings.UpdatedAt
     };
 }

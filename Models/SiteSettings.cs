@@ -63,7 +63,5 @@ public class SiteSettings
 
     public string DevelopmentPlans { get; set; } = string.Empty;
 
-    public string FormSuccessMessage { get; set; } = "Спасибо! Ваша заявка успешно отправлена.";
-
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

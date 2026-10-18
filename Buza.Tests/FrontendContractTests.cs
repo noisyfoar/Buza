@@ -70,15 +70,11 @@ public class FrontendContractTests
         Assert.Contains("route.path === \"project\"", appJs);
         Assert.Contains("route.path === \"contacts\"", appJs);
 
-        Assert.Contains("data-product-request", appJs);
-        Assert.Contains("data-feedback-form", appJs);
         Assert.Contains("/api/products", appJs);
         Assert.Contains("/api/settings", appJs);
-        Assert.Contains("/api/feedback", appJs);
 
         Assert.Contains("/api/auth/login", adminJs);
         Assert.Contains("/api/admin/products", adminJs);
-        Assert.Contains("/api/admin/feedback", adminJs);
         Assert.Contains("/api/admin/settings", adminJs);
         Assert.Contains("name=\"image\"", adminJs);
 

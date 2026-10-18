@@ -29,7 +29,6 @@ public class SiteSettingsDto
     public string DevelopmentStages { get; set; } = string.Empty;
     public string TeamInfo { get; set; } = string.Empty;
     public string DevelopmentPlans { get; set; } = string.Empty;
-    public string FormSuccessMessage { get; set; } = string.Empty;
     public DateTime UpdatedAt { get; set; }
 }
 
@@ -78,5 +77,4 @@ public class UpdateSiteSettingsDto
     public string DevelopmentStages { get; set; } = string.Empty;
     public string TeamInfo { get; set; } = string.Empty;
     public string DevelopmentPlans { get; set; } = string.Empty;
-    public string FormSuccessMessage { get; set; } = string.Empty;
 }

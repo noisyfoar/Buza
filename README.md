@@ -16,34 +16,41 @@ dotnet run
 
 При первом запуске приложение применит EF Core миграции, создаст файл `database.db`, начальные настройки, демо-товары и администратора.
 
+## Выкладка на VPS REG.RU
+
+Пошаговая инструкция для Ubuntu 24.04, Docker Compose и HTTPS по публичному IP находится в [docs/deploy-vps-reg-ru.md](docs/deploy-vps-reg-ru.md).
+
 ## Администратор
 
 - Логин: `admin`
-- Пароль: `admin123`
+- Локальная разработка: пароль по умолчанию `admin123`.
+- VPS: задайте `ADMIN_INITIAL_PASSWORD` в `.env.vps`; значение требуется только для первичного создания администратора.
 - Панель: `/admin.html`
 
 ## Основные API
 
 - `GET /api/products`
 - `GET /api/products/{id}`
+- `GET /api/events`
 - `GET /api/settings`
-- `POST /api/feedback`
 - `POST /api/auth/login`
 - `GET|POST|PUT|DELETE /api/admin/products`
-- `GET|PUT /api/admin/feedback`
+- `GET|POST|PUT|DELETE /api/admin/events`
+- `POST /api/admin/events/{id}/images` — добавить несколько фотографий к публикации
+- `DELETE /api/admin/events/{id}/images/{imageId}` — удалить фотографию
 - `PUT /api/admin/settings`
 
 Изображения загружаются в `wwwroot/uploads`, а в базе хранятся только пути к файлам.
 
 ## Тестирование
 
-Интеграционные тесты контроллеров, JWT, SQLite, заявок, товаров и настроек:
+Интеграционные тесты контроллеров, JWT, SQLite, товаров и настроек:
 
 ```powershell
 dotnet test .\Buza.Tests\Buza.Tests.csproj
 ```
 
-E2E-тесты переходов, кнопок, формы заявки и админского создания товара:
+E2E-тесты переходов и админского управления товарами:
 
 ```powershell
 npm install

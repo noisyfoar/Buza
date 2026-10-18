@@ -1,0 +1,62 @@
+name: Deploy Buza to VPS
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: buza-vps-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -eu
+          test -n "$VPS_SSH_KEY"
+          test -n "$VPS_KNOWN_HOSTS"
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$VPS_SSH_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Copy code and rebuild containers
+        env:
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_USER: ${{ vars.VPS_USER }}
+        run: |
+          set -eu
+          test -n "$VPS_HOST"
+          test -n "$VPS_USER"
+          ssh_options="ssh -i $HOME/.ssh/id_ed25519 -o IdentitiesOnly=yes"
+
+          rsync -az --delete \
+            --exclude='/.env.vps' \
+            --exclude='/.git/' \
+            --exclude='/bin/' \
+            --exclude='/obj/' \
+            --exclude='/node_modules/' \
+            --exclude='/test-results/' \
+            --exclude='/playwright-report/' \
+            -e "$ssh_options" \
+            ./ "$VPS_USER@$VPS_HOST:/opt/buza/"
+
+          ssh -i "$HOME/.ssh/id_ed25519" -o IdentitiesOnly=yes "$VPS_USER@$VPS_HOST" \
+            'cd /opt/buza && docker compose --env-file .env.vps -f docker-compose.vps.yml up -d --build'
+
+          curl --fail --silent --show-error --retry 24 --retry-delay 5 --retry-all-errors \
+            --connect-timeout 10 "https://$VPS_HOST/" >/dev/null

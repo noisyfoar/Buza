@@ -2,7 +2,7 @@ const adminState = {
   token: localStorage.getItem("buzaAdminToken"),
   activeTab: "products",
   products: [],
-  feedback: [],
+  events: [],
   settings: null
 };
 
@@ -25,7 +25,7 @@ async function renderAdmin() {
   app.innerHTML = `
     <div class="admin-tabs">
       ${tabButton("products", "Товары")}
-      ${tabButton("feedback", "Заявки")}
+      ${tabButton("events", "Мероприятия")}
       ${tabButton("settings", "Настройки")}
     </div>
     <div class="admin-status" id="adminStatus"></div>
@@ -45,9 +45,9 @@ async function renderAdmin() {
       renderProducts();
     }
 
-    if (adminState.activeTab === "feedback") {
-      await loadFeedback();
-      renderFeedback();
+    if (adminState.activeTab === "events") {
+      await loadEvents();
+      renderEventPosts();
     }
 
     if (adminState.activeTab === "settings") {
@@ -114,8 +114,8 @@ async function loadProducts() {
   adminState.products = await adminApi("/api/admin/products");
 }
 
-async function loadFeedback() {
-  adminState.feedback = await adminApi("/api/admin/feedback");
+async function loadEvents() {
+  adminState.events = await adminApi("/api/admin/events");
 }
 
 async function loadSettings() {
@@ -311,47 +311,82 @@ async function deleteImage(productId, imageId) {
   }
 }
 
-function renderFeedback() {
+function renderEventPosts() {
   const content = document.getElementById("adminContent");
   content.innerHTML = `
     <section class="admin-panel">
-      <h2>Заявки</h2>
-      ${adminState.feedback.length ? feedbackTable() : `<div class="empty-state">Заявок пока нет.</div>`}
+      <h2>Публикация о мероприятии</h2>
+      <div id="eventFormContainer">${eventPostForm()}</div>
+    </section>
+    <section class="admin-panel">
+      <h2>Список публикаций</h2>
+      ${adminState.events.length ? eventPostsTable() : `<div class="empty-state">Мероприятия еще не добавлены.</div>`}
     </section>
   `;
 
-  content.querySelectorAll("[data-feedback-status]").forEach((select) => {
-    select.addEventListener("change", () => updateFeedbackStatus(Number(select.dataset.feedbackStatus), select.value));
+  bindEventPostForm();
+  content.querySelectorAll("[data-edit-event]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const post = adminState.events.find((item) => item.id === Number(button.dataset.editEvent));
+      fillEventPostForm(post);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  });
+  content.querySelectorAll("[data-delete-event]").forEach((button) => {
+    button.addEventListener("click", () => deleteEventPost(Number(button.dataset.deleteEvent)));
+  });
+  content.querySelectorAll("[data-delete-event-image]").forEach((button) => {
+    button.addEventListener("click", () => deleteEventImage(Number(button.dataset.eventId), Number(button.dataset.deleteEventImage)));
   });
 }
 
-function feedbackTable() {
+function eventPostForm(post = null) {
+  return `
+    <form class="admin-form" id="eventPostForm" enctype="multipart/form-data">
+      <input type="hidden" name="id" value="${post?.id || ""}">
+      <label>Заголовок
+        <input name="title" required maxlength="200" value="${escapeAttr(post?.title || "")}">
+      </label>
+      <label>Общий текст поста
+        <textarea name="content" required>${escapeHtml(post?.content || "")}</textarea>
+      </label>
+      <label>Картинки
+        <input name="images" type="file" accept=".jpg,.jpeg,.png,.webp,.gif" multiple>
+        <small>Можно выбрать до 10 файлов за раз, до 5 МБ каждый.</small>
+      </label>
+      ${post?.images?.length ? `<div><strong>Загруженные картинки</strong>${eventImageList(post)}</div>` : ""}
+      <label class="check">
+        <input name="isPublished" type="checkbox" ${post?.isPublished === false ? "" : "checked"}>
+        <span>Опубликовано на сайте</span>
+      </label>
+      <div class="actions">
+        <button class="button primary" type="submit">Сохранить</button>
+        <button class="button secondary" type="button" id="resetEventPostForm">Новая публикация</button>
+      </div>
+    </form>
+  `;
+}
+
+function bindEventPostForm() {
+  document.getElementById("eventPostForm").addEventListener("submit", saveEventPost);
+  document.getElementById("resetEventPostForm").addEventListener("click", () => fillEventPostForm(null));
+}
+
+function eventPostsTable() {
   return `
     <table class="admin-table">
-      <thead>
-        <tr>
-          <th>Контакт</th>
-          <th>Товар</th>
-          <th>Сообщение</th>
-          <th>Статус</th>
-        </tr>
-      </thead>
+      <thead><tr><th>Мероприятие</th><th>Дата</th><th>Статус</th><th>Фото</th><th>Действия</th></tr></thead>
       <tbody>
-        ${adminState.feedback.map((item) => `
+        ${adminState.events.map((post) => `
           <tr>
-            <td>
-              <strong>${escapeHtml(item.name)}</strong><br>
-              ${escapeHtml(item.phone)}<br>
-              <a href="mailto:${escapeAttr(item.email)}">${escapeHtml(item.email)}</a><br>
-              ${new Date(item.createdAt).toLocaleString("ru-RU")}
-            </td>
-            <td>${escapeHtml(item.productName || "Не выбран")}</td>
-            <td>${escapeHtml(item.message)}</td>
-            <td>
-              <select data-feedback-status="${item.id}">
-                ${["NEW", "IN_PROGRESS", "COMPLETED", "CANCELED"].map((status) => `<option value="${status}" ${item.status === status ? "selected" : ""}>${status}</option>`).join("")}
-              </select>
-            </td>
+            <td><strong>${escapeHtml(post.title)}</strong><br>${escapeHtml(post.content.slice(0, 180))}${post.content.length > 180 ? "…" : ""}</td>
+            <td>${new Date(post.createdAt).toLocaleDateString("ru-RU")}</td>
+            <td>${post.isPublished ? "Опубликовано" : "Скрыто"}</td>
+            <td>${post.images?.length || 0}</td>
+            <td><div class="row-actions">
+              <button class="button secondary" type="button" data-edit-event="${post.id}">Изменить</button>
+              <button class="button danger" type="button" data-delete-event="${post.id}">Удалить</button>
+            </div></td>
           </tr>
         `).join("")}
       </tbody>
@@ -359,13 +394,79 @@ function feedbackTable() {
   `;
 }
 
-async function updateFeedbackStatus(id, status) {
+function eventImageList(post) {
+  return `
+    <div class="image-list" style="margin-top: 12px">
+      ${post.images.map((image) => `
+        <div class="image-item">
+          <img src="${escapeAttr(image.filePath)}" alt="">
+          <button class="button secondary" type="button" data-event-id="${post.id}" data-delete-event-image="${image.id}">Удалить фото</button>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function fillEventPostForm(post) {
+  document.getElementById("eventFormContainer").innerHTML = eventPostForm(post);
+  bindEventPostForm();
+}
+
+async function saveEventPost(event) {
+  event.preventDefault();
+  const form = event.target;
+  const id = form.elements.id.value;
+  const payload = {
+    title: form.elements.title.value,
+    content: form.elements.content.value,
+    isPublished: form.elements.isPublished.checked
+  };
+
   try {
-    await adminApi(`/api/admin/feedback/${id}`, {
-      method: "PUT",
-      body: JSON.stringify({ status })
+    const post = await adminApi(id ? `/api/admin/events/${id}` : "/api/admin/events", {
+      method: id ? "PUT" : "POST",
+      body: JSON.stringify(payload)
     });
-    setStatus("Статус заявки обновлен.");
+    form.elements.id.value = post.id;
+    const images = Array.from(form.elements.images.files);
+    if (images.length) {
+      if (images.length > 10) {
+        throw new Error("За одну загрузку можно выбрать не больше 10 картинок.");
+      }
+      const data = new FormData();
+      images.forEach((image) => data.append("files", image));
+      await adminApi(`/api/admin/events/${post.id}/images`, { method: "POST", body: data });
+    }
+
+    setStatus("Публикация сохранена.");
+    await loadEvents();
+    renderEventPosts();
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+}
+
+async function deleteEventPost(id) {
+  if (!confirm("Удалить публикацию и все ее картинки?")) {
+    return;
+  }
+
+  try {
+    await adminApi(`/api/admin/events/${id}`, { method: "DELETE" });
+    setStatus("Публикация удалена.");
+    await loadEvents();
+    renderEventPosts();
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+}
+
+async function deleteEventImage(eventId, imageId) {
+  try {
+    await adminApi(`/api/admin/events/${eventId}/images/${imageId}`, { method: "DELETE" });
+    setStatus("Картинка удалена.");
+    await loadEvents();
+    renderEventPosts();
   } catch (error) {
     setStatus(error.message, true);
   }
@@ -386,7 +487,6 @@ function renderSettings() {
           ${settingsInput("email", "Email", s.email)}
         </div>
         ${settingsInput("address", "Адрес", s.address)}
-        ${settingsTextarea("socialLinks", "Социальные сети", s.socialLinks)}
         ${settingsTextarea("foundationText", "Текст поддержки", s.foundationText)}
         <div class="form-grid">
           ${settingsInput("foundationUrl", "Ссылка фонда", s.foundationUrl)}
@@ -406,7 +506,6 @@ function renderSettings() {
         ${settingsTextarea("developmentStages", "Этапы развития", s.developmentStages)}
         ${settingsTextarea("teamInfo", "Команда", s.teamInfo)}
         ${settingsTextarea("developmentPlans", "Планы развития", s.developmentPlans)}
-        ${settingsInput("formSuccessMessage", "Сообщение после отправки формы", s.formSuccessMessage)}
         <button class="button primary" type="submit">Сохранить настройки</button>
       </form>
     </section>

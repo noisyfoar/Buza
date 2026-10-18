@@ -1,6 +1,7 @@
 const state = {
   settings: null,
-  products: []
+  products: [],
+  events: []
 };
 
 const fallbackImage = "/assets/buza-product.png";
@@ -43,15 +44,6 @@ function bindNavigation() {
     toggle.setAttribute("aria-expanded", "false");
   });
 
-  document.addEventListener("click", (event) => {
-    const requestButton = event.target.closest("[data-product-request]");
-    if (requestButton) {
-      const productId = requestButton.getAttribute("data-product-request");
-      window.location.hash = `#/contacts?product=${productId}`;
-    }
-  });
-
-  document.addEventListener("submit", handleFeedbackSubmit);
 }
 
 function applyChrome(settings) {
@@ -100,6 +92,11 @@ async function render() {
     return;
   }
 
+  if (route.path === "events") {
+    await renderEvents();
+    return;
+  }
+
   if (route.path.startsWith("product/")) {
     await renderProductDetails(Number(route.path.split("/")[1]));
     return;
@@ -116,7 +113,7 @@ async function render() {
   }
 
   if (route.path === "contacts") {
-    renderContacts(route.params.get("product"));
+    renderContacts();
     return;
   }
 
@@ -167,16 +164,6 @@ function renderHome() {
         </div>
       </div>
     </section>
-    <section class="section compact">
-      <div class="section-inner text-columns">
-        <div>
-          <p class="eyebrow">Быстрая заявка</p>
-          <h2>Оставьте контакты для заказа или дегустации</h2>
-          <p class="lead">Заявка попадет в административную панель, где можно менять ее статус и видеть историю обращений.</p>
-        </div>
-        ${feedbackForm()}
-      </div>
-    </section>
   `;
 }
 
@@ -220,6 +207,38 @@ function renderCatalog() {
   `;
 }
 
+async function renderEvents() {
+  const app = document.getElementById("app");
+  app.innerHTML = `<section class="section"><div class="section-inner empty-state">Загрузка мероприятий...</div></section>`;
+
+  try {
+    state.events = await api("/api/events");
+    app.innerHTML = `
+      ${pageIntro("Мероприятия", "События проекта", "Новости, встречи и события команды «Бузы».")}
+      <section class="section compact">
+        <div class="section-inner grid">
+          ${state.events.length ? state.events.map(eventPostCard).join("") : `<div class="empty-state">Пока нет опубликованных мероприятий.</div>`}
+        </div>
+      </section>
+    `;
+  } catch (error) {
+    app.innerHTML = `<section class="section"><div class="section-inner empty-state">${escapeHtml(error.message)}</div></section>`;
+  }
+}
+
+function eventPostCard(post) {
+  return `
+    <article class="event-post">
+      <div class="event-post-header">
+        <h2>${escapeHtml(post.title)}</h2>
+        <time datetime="${escapeAttr(post.createdAt)}">${new Date(post.createdAt).toLocaleDateString("ru-RU")}</time>
+      </div>
+      ${post.images?.length ? `<div class="event-gallery">${post.images.map((image, index) => `<img src="${escapeAttr(image.filePath)}" alt="${escapeAttr(post.title)} — фото ${index + 1}" loading="lazy">`).join("")}</div>` : ""}
+      <p class="rich-text event-post-content">${escapeHtml(post.content)}</p>
+    </article>
+  `;
+}
+
 async function renderProductDetails(id) {
   const app = document.getElementById("app");
   app.innerHTML = `<section class="section"><div class="section-inner empty-state">Загрузка товара...</div></section>`;
@@ -244,7 +263,6 @@ async function renderProductDetails(id) {
               <h3>Характеристики</h3>
               <p><strong>Объем:</strong> ${escapeHtml(product.volume)}</p>
               <p class="price">${formatPrice(product.price)}</p>
-              <button class="button primary" type="button" data-product-request="${product.id}">Оставить заявку</button>
             </div>
           </div>
         </div>
@@ -287,11 +305,10 @@ function renderProject() {
   `;
 }
 
-function renderContacts(selectedProductId) {
+function renderContacts() {
   const s = state.settings;
-  const socialLinks = parseSocialLinks(s.socialLinks);
   document.getElementById("app").innerHTML = `
-    ${pageIntro("Контакты", "Связаться с проектом", "Оставьте сообщение, уточните наличие продукции или предложите сотрудничество.")}
+    ${pageIntro("Контакты", "Связаться с проектом", "Уточните наличие продукции или предложите сотрудничество по телефону или электронной почте.")}
     <section class="section compact">
       <div class="section-inner text-columns">
         <div class="grid">
@@ -301,12 +318,7 @@ function renderContacts(selectedProductId) {
             <p><strong>Email:</strong> <a href="mailto:${escapeAttr(s.email)}">${escapeHtml(s.email)}</a></p>
             <p><strong>Адрес:</strong> ${escapeHtml(s.address)}</p>
           </div>
-          <div class="info-panel">
-            <h3>Социальные сети</h3>
-            ${socialLinks.length ? socialLinks.map((link) => `<p><a href="${escapeAttr(link.href)}" target="_blank" rel="noreferrer">${escapeHtml(link.label)}</a></p>`).join("") : "<p>Ссылки будут добавлены позже.</p>"}
-          </div>
         </div>
-        ${feedbackForm({ selectedProductId })}
       </div>
     </section>
   `;
@@ -364,81 +376,10 @@ function productCard(product) {
         </div>
         <div class="actions">
           <a class="button secondary" href="#/product/${product.id}">Подробнее</a>
-          <button class="button primary" type="button" data-product-request="${product.id}">Оставить заявку</button>
         </div>
       </div>
     </article>
   `;
-}
-
-function feedbackForm(options = {}) {
-  const selectedId = options.selectedProductId ? Number(options.selectedProductId) : "";
-  const productOptions = [
-    `<option value="">Не выбран</option>`,
-    ...state.products.map((product) => `<option value="${product.id}" ${Number(selectedId) === product.id ? "selected" : ""}>${escapeHtml(product.name)}</option>`)
-  ].join("");
-
-  return `
-    <form class="form-panel feedback-form" data-feedback-form>
-      <div class="form-grid">
-        <label>Имя
-          <input name="name" autocomplete="name" required maxlength="120">
-        </label>
-        <label>Телефон
-          <input name="phone" autocomplete="tel" required maxlength="40">
-        </label>
-      </div>
-      <label>Email
-        <input name="email" type="email" autocomplete="email" required maxlength="160">
-      </label>
-      <label>Выбранный товар
-        <select name="productId">${productOptions}</select>
-      </label>
-      <label>Сообщение
-        <textarea name="message" required maxlength="2000"></textarea>
-      </label>
-      <label class="check">
-        <input name="personalDataAccepted" type="checkbox" required>
-        <span>Я согласен на обработку персональных данных</span>
-      </label>
-      <button class="button primary" type="submit">Отправить заявку</button>
-      <div class="form-result" data-form-result></div>
-    </form>
-  `;
-}
-
-async function handleFeedbackSubmit(event) {
-  const form = event.target;
-  if (!form.matches("[data-feedback-form]")) {
-    return;
-  }
-
-  event.preventDefault();
-  const result = form.querySelector("[data-form-result]");
-  result.classList.remove("error");
-  result.textContent = "Отправка...";
-
-  const productId = form.elements.productId.value;
-  const payload = {
-    name: form.elements.name.value,
-    phone: form.elements.phone.value,
-    email: form.elements.email.value,
-    productId: productId ? Number(productId) : null,
-    message: form.elements.message.value,
-    personalDataAccepted: form.elements.personalDataAccepted.checked
-  };
-
-  try {
-    const response = await api("/api/feedback", {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
-    result.textContent = response.message;
-    form.reset();
-  } catch (error) {
-    result.classList.add("error");
-    result.textContent = error.message;
-  }
 }
 
 async function api(url, options = {}) {

@@ -1,0 +1,51 @@
+name: buza-vps
+
+services:
+  app:
+    build:
+      context: .
+    container_name: buza-vps-app
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      PORT: "8080"
+      Jwt__Issuer: BuzaStartup
+      Jwt__Audience: BuzaStartup.Admin
+      Jwt__Secret: ${JWT_SECRET:?Set JWT_SECRET in .env.vps}
+      Jwt__ExpiresMinutes: "720"
+      Admin__InitialPassword: ${ADMIN_INITIAL_PASSWORD:-}
+      ConnectionStrings__DefaultConnection: Data Source=/data/database.db
+    volumes:
+      - buza_vps_data:/data
+    networks:
+      - web
+
+  caddy:
+    image: caddy:2.11.7-alpine
+    container_name: buza-vps-caddy
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?Set SITE_ADDRESS in .env.vps}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in .env.vps}
+    volumes:
+      - ./Caddyfile.vps:/etc/caddy/Caddyfile:ro
+      - caddy_vps_data:/data
+      - caddy_vps_config:/config
+    networks:
+      - web
+
+networks:
+  web:
+
+volumes:
+  buza_vps_data:
+  caddy_vps_data:
+  caddy_vps_config:

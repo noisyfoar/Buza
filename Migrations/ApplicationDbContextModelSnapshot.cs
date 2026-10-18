@@ -14,6 +14,29 @@ public partial class ApplicationDbContextModelSnapshot : ModelSnapshot
 #pragma warning disable 612, 618
         modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
 
+        modelBuilder.Entity("Buza.Models.EventPost", b =>
+        {
+            b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("INTEGER");
+            b.Property<string>("Content").IsRequired().HasColumnType("TEXT");
+            b.Property<DateTime>("CreatedAt").HasColumnType("TEXT");
+            b.Property<bool>("IsPublished").HasColumnType("INTEGER");
+            b.Property<string>("Title").IsRequired().HasMaxLength(200).HasColumnType("TEXT");
+            b.Property<DateTime?>("UpdatedAt").HasColumnType("TEXT");
+            b.HasKey("Id");
+            b.ToTable("EventPosts");
+        });
+
+        modelBuilder.Entity("Buza.Models.EventImage", b =>
+        {
+            b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("INTEGER");
+            b.Property<DateTime>("CreatedAt").HasColumnType("TEXT");
+            b.Property<int>("EventPostId").HasColumnType("INTEGER");
+            b.Property<string>("FilePath").IsRequired().HasMaxLength(300).HasColumnType("TEXT");
+            b.HasKey("Id");
+            b.HasIndex("EventPostId");
+            b.ToTable("EventImages");
+        });
+
         modelBuilder.Entity("Buza.Models.AdminUser", b =>
         {
             b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("INTEGER");
@@ -24,21 +47,6 @@ public partial class ApplicationDbContextModelSnapshot : ModelSnapshot
             b.HasKey("Id");
             b.HasIndex("Login").IsUnique();
             b.ToTable("AdminUsers");
-        });
-
-        modelBuilder.Entity("Buza.Models.FeedbackRequest", b =>
-        {
-            b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("INTEGER");
-            b.Property<DateTime>("CreatedAt").HasColumnType("TEXT");
-            b.Property<string>("Email").IsRequired().HasMaxLength(160).HasColumnType("TEXT");
-            b.Property<string>("Message").IsRequired().HasColumnType("TEXT");
-            b.Property<string>("Name").IsRequired().HasMaxLength(120).HasColumnType("TEXT");
-            b.Property<string>("Phone").IsRequired().HasMaxLength(40).HasColumnType("TEXT");
-            b.Property<int?>("ProductId").HasColumnType("INTEGER");
-            b.Property<string>("Status").IsRequired().HasColumnType("TEXT");
-            b.HasKey("Id");
-            b.HasIndex("ProductId");
-            b.ToTable("FeedbackRequests");
         });
 
         modelBuilder.Entity("Buza.Models.Product", b =>
@@ -68,6 +76,16 @@ public partial class ApplicationDbContextModelSnapshot : ModelSnapshot
             b.ToTable("ProductImages");
         });
 
+        modelBuilder.Entity("Buza.Models.EventImage", b =>
+        {
+            b.HasOne("Buza.Models.EventPost", "EventPost")
+                .WithMany("Images")
+                .HasForeignKey("EventPostId")
+                .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired();
+            b.Navigation("EventPost");
+        });
+
         modelBuilder.Entity("Buza.Models.SiteSettings", b =>
         {
             b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("INTEGER");
@@ -76,7 +94,6 @@ public partial class ApplicationDbContextModelSnapshot : ModelSnapshot
             b.Property<string>("DevelopmentStages").IsRequired().HasColumnType("TEXT");
             b.Property<string>("Email").IsRequired().HasMaxLength(160).HasColumnType("TEXT");
             b.Property<string>("FederalProjectUrl").IsRequired().HasMaxLength(300).HasColumnType("TEXT");
-            b.Property<string>("FormSuccessMessage").IsRequired().HasColumnType("TEXT");
             b.Property<string>("FoundationText").IsRequired().HasColumnType("TEXT");
             b.Property<string>("FoundationUrl").IsRequired().HasMaxLength(300).HasColumnType("TEXT");
             b.Property<string>("HeroDescription").IsRequired().HasColumnType("TEXT");
@@ -101,15 +118,6 @@ public partial class ApplicationDbContextModelSnapshot : ModelSnapshot
             b.ToTable("SiteSettings");
         });
 
-        modelBuilder.Entity("Buza.Models.FeedbackRequest", b =>
-        {
-            b.HasOne("Buza.Models.Product", "Product")
-                .WithMany()
-                .HasForeignKey("ProductId")
-                .OnDelete(DeleteBehavior.SetNull);
-            b.Navigation("Product");
-        });
-
         modelBuilder.Entity("Buza.Models.ProductImage", b =>
         {
             b.HasOne("Buza.Models.Product", "Product")
@@ -121,6 +129,11 @@ public partial class ApplicationDbContextModelSnapshot : ModelSnapshot
         });
 
         modelBuilder.Entity("Buza.Models.Product", b =>
+        {
+            b.Navigation("Images");
+        });
+
+        modelBuilder.Entity("Buza.Models.EventPost", b =>
         {
             b.Navigation("Images");
         });

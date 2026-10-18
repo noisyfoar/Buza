@@ -19,7 +19,6 @@ public class ApiIntegrationTests
 
         Assert.NotNull(settings);
         Assert.Equal("Напиток здоровья и молодости — буза", settings.ProjectName);
-        Assert.Contains("Спасибо", settings.FormSuccessMessage);
         Assert.True(File.Exists(factory.DatabasePath));
 
         var dbOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -60,50 +59,4 @@ public class ApiIntegrationTests
         Assert.NotEmpty(settings.FoundationText);
     }
 
-    [Fact]
-    public async Task Feedback_controller_validates_input_and_persists_requests()
-    {
-        using var factory = new BuzaWebApplicationFactory();
-        using var client = factory.CreateClient();
-        var products = await client.GetFromJsonAsync<List<ProductSummaryDto>>("/api/products");
-        Assert.NotNull(products);
-
-        var invalidResponse = await client.PostAsJsonAsync("/api/feedback", new FeedbackCreateDto
-        {
-            Name = "Нет согласия",
-            Phone = "+7 000 000-00-00",
-            Email = "bad@example.com",
-            ProductId = products[0].Id,
-            Message = "Проверка валидации",
-            PersonalDataAccepted = false
-        });
-
-        Assert.Equal(HttpStatusCode.BadRequest, invalidResponse.StatusCode);
-
-        var createResponse = await client.PostAsJsonAsync("/api/feedback", new FeedbackCreateDto
-        {
-            Name = "Покупатель",
-            Phone = "+7 999 111-22-33",
-            Email = "buyer@example.com",
-            ProductId = products[0].Id,
-            Message = "Хочу заказать бузу",
-            PersonalDataAccepted = true
-        });
-
-        createResponse.EnsureSuccessStatusCode();
-        var body = await createResponse.Content.ReadFromJsonAsync<FeedbackCreateResponse>();
-
-        Assert.NotNull(body);
-        Assert.Contains("Спасибо", body.Message);
-        Assert.Equal("NEW", body.Request.Status);
-
-        var token = await AuthTestHelper.LoginAsAdminAsync(client);
-        client.UseBearerToken(token);
-        var adminFeedback = await client.GetFromJsonAsync<List<FeedbackDto>>("/api/admin/feedback");
-
-        Assert.NotNull(adminFeedback);
-        Assert.Contains(adminFeedback, request => request.Email == "buyer@example.com" && request.Status == "NEW");
-    }
-
-    private sealed record FeedbackCreateResponse(string Message, FeedbackDto Request);
 }

@@ -101,38 +101,12 @@ public class AdminWorkflowTests
     }
 
     [Fact]
-    public async Task Admin_can_update_feedback_status_and_site_settings()
+    public async Task Admin_can_update_site_settings()
     {
         using var factory = new BuzaWebApplicationFactory();
         using var client = factory.CreateClient();
-        var products = await client.GetFromJsonAsync<List<ProductSummaryDto>>("/api/products");
-        Assert.NotNull(products);
-
-        var feedbackResponse = await client.PostAsJsonAsync("/api/feedback", new FeedbackCreateDto
-        {
-            Name = "Статус заявки",
-            Phone = "+7 999 555-44-33",
-            Email = "status@example.com",
-            ProductId = products[0].Id,
-            Message = "Нужно поменять статус",
-            PersonalDataAccepted = true
-        });
-        feedbackResponse.EnsureSuccessStatusCode();
-        var createdFeedback = await feedbackResponse.Content.ReadFromJsonAsync<FeedbackCreateResponse>();
-        Assert.NotNull(createdFeedback);
-
         var token = await AuthTestHelper.LoginAsAdminAsync(client);
         client.UseBearerToken(token);
-
-        var statusResponse = await client.PutAsJsonAsync($"/api/admin/feedback/{createdFeedback.Request.Id}", new FeedbackStatusUpdateDto
-        {
-            Status = "IN_PROGRESS"
-        });
-
-        statusResponse.EnsureSuccessStatusCode();
-        var updatedFeedback = await statusResponse.Content.ReadFromJsonAsync<FeedbackDto>();
-        Assert.NotNull(updatedFeedback);
-        Assert.Equal("IN_PROGRESS", updatedFeedback.Status);
 
         var settings = await client.GetFromJsonAsync<SiteSettingsDto>("/api/settings");
         Assert.NotNull(settings);
@@ -163,7 +137,6 @@ public class AdminWorkflowTests
             DevelopmentStages = settings.DevelopmentStages,
             TeamInfo = settings.TeamInfo,
             DevelopmentPlans = settings.DevelopmentPlans,
-            FormSuccessMessage = "Заявка принята автотестом"
         });
 
         settingsResponse.EnsureSuccessStatusCode();
@@ -172,8 +145,5 @@ public class AdminWorkflowTests
         Assert.NotNull(publicSettings);
         Assert.Equal("Буза автотест", publicSettings.ProjectName);
         Assert.Equal("autotest@example.com", publicSettings.Email);
-        Assert.Equal("Заявка принята автотестом", publicSettings.FormSuccessMessage);
     }
-
-    private sealed record FeedbackCreateResponse(string Message, FeedbackDto Request);
 }

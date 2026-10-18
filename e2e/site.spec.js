@@ -24,29 +24,15 @@ test("public navigation switches all required pages", async ({ page }) => {
   }
 });
 
-test("catalog details and request buttons navigate to product and feedback form", async ({ page }) => {
+test("catalog product details open without a request form", async ({ page }) => {
   await page.goto("/#/catalog");
 
   await page.getByRole("link", { name: "Подробнее" }).first().click();
   await expect(page).toHaveURL(/#\/product\/\d+$/);
   await expect(page.locator("main h1")).toContainText("Буза");
 
-  await page.getByRole("button", { name: "Оставить заявку" }).click();
-  await expect(page).toHaveURL(/#\/contacts\?product=\d+$/);
-  await expect(page.locator("select[name='productId']")).not.toHaveValue("");
-});
-
-test("feedback form button creates a request and shows success message", async ({ page }) => {
-  await page.goto("/#/contacts");
-
-  await page.locator("input[name='name']").fill("E2E покупатель");
-  await page.locator("input[name='phone']").fill("+7 999 123-45-67");
-  await page.locator("input[name='email']").fill("e2e-buyer@example.com");
-  await page.locator("textarea[name='message']").fill("Проверка создания заявки через кнопку формы");
-  await page.locator("input[name='personalDataAccepted']").check();
-  await page.getByRole("button", { name: "Отправить заявку" }).click();
-
-  await expect(page.locator("[data-form-result]")).toContainText("Спасибо");
+  await expect(page.getByRole("button", { name: "Оставить заявку" })).toHaveCount(0);
+  await expect(page.locator("main form")).toHaveCount(0);
 });
 
 test("admin panel creates product, uploads image, and deletes product", async ({ page }) => {

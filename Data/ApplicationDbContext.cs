@@ -9,11 +9,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<ProductImage> ProductImages => Set<ProductImage>();
 
-    public DbSet<FeedbackRequest> FeedbackRequests => Set<FeedbackRequest>();
-
     public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
 
     public DbSet<SiteSettings> SiteSettings => Set<SiteSettings>();
+
+    public DbSet<EventPost> EventPosts => Set<EventPost>();
+
+    public DbSet<EventImage> EventImages => Set<EventImage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -28,17 +30,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<FeedbackRequest>(entity =>
-        {
-            entity.Property(request => request.Status).HasConversion<string>();
-            entity.HasOne(request => request.Product)
-                .WithMany()
-                .HasForeignKey(request => request.ProductId)
-                .OnDelete(DeleteBehavior.SetNull);
-        });
-
         modelBuilder.Entity<AdminUser>()
             .HasIndex(admin => admin.Login)
             .IsUnique();
+
+        modelBuilder.Entity<EventPost>()
+            .HasMany(post => post.Images)
+            .WithOne(image => image.EventPost)
+            .HasForeignKey(image => image.EventPostId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

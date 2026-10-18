@@ -5,11 +5,19 @@ Buza.Tests/obj/
 node_modules/
 test-results/
 playwright-report/
+publish-linux/
 .vs/
 .git/
+.tools/
 
 database.db
 database.db-shm
 database.db-wal
+.env.vps
+*.db
+*.db-shm
+*.db-wal
+buza-*.tar
+buza-*.tar.gz
 server.pid
 *.log
