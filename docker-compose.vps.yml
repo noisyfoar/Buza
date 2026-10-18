@@ -2,8 +2,8 @@ name: buza-vps
 
 services:
   app:
-    build:
-      context: .
+    image: buza-app:latest
+    pull_policy: never
     container_name: buza-vps-app
     restart: unless-stopped
     expose:
@@ -24,6 +24,7 @@ services:
 
   caddy:
     image: caddy:2.11.7-alpine
+    pull_policy: never
     container_name: buza-vps-caddy
     restart: unless-stopped
     depends_on:

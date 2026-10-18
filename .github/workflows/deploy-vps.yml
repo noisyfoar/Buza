@@ -20,6 +20,13 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Build the Docker image on GitHub
+        run: |
+          set -euo pipefail
+          docker build --pull --tag buza-app:latest .
+          docker pull caddy:2.11.7-alpine
+          docker save buza-app:latest caddy:2.11.7-alpine | gzip -1 > "$RUNNER_TEMP/buza-images.tar.gz"
+
       - name: Configure SSH
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
@@ -34,7 +41,7 @@ jobs:
           printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
 
-      - name: Copy code and rebuild containers
+      - name: Copy code and deploy the image
         env:
           VPS_HOST: ${{ vars.VPS_HOST }}
           VPS_USER: ${{ vars.VPS_USER }}
@@ -55,10 +62,13 @@ jobs:
             -e "$ssh_options" \
             ./ "$VPS_USER@$VPS_HOST:/opt/buza/"
 
+          rsync -a --partial -e "$ssh_options" \
+            "$RUNNER_TEMP/buza-images.tar.gz" "$VPS_USER@$VPS_HOST:/opt/buza/buza-images.tar.gz"
+
           ssh -i "$HOME/.ssh/id_ed25519" -o IdentitiesOnly=yes \
             -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o TCPKeepAlive=yes \
             "$VPS_USER@$VPS_HOST" \
-            'cd /opt/buza && docker compose --env-file .env.vps -f docker-compose.vps.yml up -d --build'
+            'cd /opt/buza && gzip -dc buza-images.tar.gz | docker load && docker compose --env-file .env.vps -f docker-compose.vps.yml up -d --no-build && rm -f buza-images.tar.gz'
 
           curl --fail --silent --show-error --retry 24 --retry-delay 5 --retry-all-errors \
             --connect-timeout 10 "https://$VPS_HOST/" >/dev/null

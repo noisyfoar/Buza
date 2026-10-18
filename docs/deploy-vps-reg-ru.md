@@ -38,10 +38,11 @@ openssl rand -base64 24
 ## 3. Запустите сайт
 
 ```bash
-docker compose --env-file .env.vps -f docker-compose.vps.yml up -d --build
 docker compose --env-file .env.vps -f docker-compose.vps.yml ps
 docker compose --env-file .env.vps -f docker-compose.vps.yml logs -f caddy app
 ```
+
+Первый запуск контейнеров выполняется GitHub Actions после настройки автодеплоя и отправки кода в `master`. Workflow собирает образ в GitHub Actions и передаёт его на VPS; NuGet restore не выполняется на сервере.
 
 После получения сертификата откройте `https://<публичный-IP>/`. Вход в админку: `https://<публичный-IP>/admin.html`, логин `admin`, пароль — значение `ADMIN_INITIAL_PASSWORD`. При первом запуске сервер требует пароль не короче 16 символов. Если база уже содержит администратора, начальный пароль из `.env.vps` не сбрасывает его.
 
@@ -59,18 +60,17 @@ Caddy получит сертификат для домена и будет пе
 
 ## Обновление кода
 
-После отправки новых изменений в GitHub выполните на VPS:
+После отправки изменений в ветку `master` GitHub Actions автоматически соберёт образ, передаст его на VPS и перезапустит приложение. Для ручного применения уже загруженного образа выполните на сервере:
 
 ```bash
-git pull
-docker compose --env-file .env.vps -f docker-compose.vps.yml up -d --build
+docker compose --env-file .env.vps -f docker-compose.vps.yml up -d --no-build
 ```
 
 Миграции базы применяются приложением при старте. Сделайте резервную копию перед обновлением, если база содержит важные публикации или настройки.
 
 ## Автоматический деплой из GitHub
 
-Файл `.github/workflows/deploy-vps.yml` запускается при каждом `git push` в ветку `master` и по кнопке **Run workflow** в GitHub Actions. Он синхронизирует checkout в `/opt/buza`, сохраняет серверный `.env.vps`, затем пересобирает и запускает Docker Compose. Каталог `/opt/buza` должен быть выделен только под этот проект: синхронизация удаляет из него файлы, которых больше нет в репозитории. SQLite и загруженные фотографии остаются в Docker volume.
+Файл `.github/workflows/deploy-vps.yml` запускается при каждом `git push` в ветку `master` и по кнопке **Run workflow** в GitHub Actions. GitHub Actions собирает Docker-образ, синхронизирует исходники в `/opt/buza`, передаёт образ на VPS и запускает Docker Compose. Серверный `.env.vps` сохраняется. Каталог `/opt/buza` должен быть выделен только под этот проект: синхронизация удаляет из него файлы, которых больше нет в репозитории. SQLite и загруженные фотографии остаются в Docker volume.
 
 ### Один раз подготовьте пользователя деплоя на сервере
 
