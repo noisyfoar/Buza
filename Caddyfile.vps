@@ -1,5 +1,7 @@
 {
     email {$ACME_EMAIL}
+    default_sni {$SITE_ADDRESS}
+    key_type rsa2048
 }
 
 {$SITE_ADDRESS} {
