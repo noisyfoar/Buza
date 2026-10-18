@@ -2,6 +2,11 @@ name: Diagnose Buza VPS
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - .github/workflows/diagnose-vps.yml
 
 permissions:
   contents: read
