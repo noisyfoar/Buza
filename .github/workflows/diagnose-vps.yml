@@ -72,8 +72,20 @@ jobs:
 
       - name: Probe HTTPS from Russian Check-Host nodes
         id: checkhost
+        env:
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_USER: ${{ vars.VPS_USER }}
         run: |
           set +e
+          ssh -i "$HOME/.ssh/id_ed25519" -o IdentitiesOnly=yes \
+            -o ServerAliveInterval=15 -o ServerAliveCountMax=2 -o ConnectTimeout=10 \
+            "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
+          docker rm -f buza-tls-capture >/dev/null 2>&1 || true
+          docker run -d --name buza-tls-capture --network host \
+            --cap-add NET_RAW --cap-add NET_ADMIN caddy:2.11.7-alpine \
+            sh -c 'apk add --no-cache tcpdump >/dev/null 2>&1 && timeout 35 tcpdump -nni any -s0 -vvv -X "tcp port 443 and (host 185.130.104.238 or host 194.26.229.20 or host 185.221.199.82)"' \
+            >/dev/null 2>&1
+          REMOTE
           ip_response=$(curl -sS --max-time 15 -H 'Accept: application/json' \
             'https://check-host.net/check-http?host=https%3A%2F%2F89.111.152.194%2F&node=ru1.node.check-host.net&node=ru2.node.check-host.net&node=ru3.node.check-host.net')
           ip_status=$?
@@ -97,7 +109,7 @@ jobs:
           set -eu
           ssh -i "$HOME/.ssh/id_ed25519" -o IdentitiesOnly=yes \
             -o ServerAliveInterval=15 -o ServerAliveCountMax=2 -o ConnectTimeout=10 \
-            "$VPS_USER@$VPS_HOST" 'docker logs --since 5m --tail 160 buza-vps-caddy 2>&1' | \
+            "$VPS_USER@$VPS_HOST" 'docker logs --since 5m --tail 160 buza-vps-caddy 2>&1; printf "\n===== Packet capture =====\n"; docker logs buza-tls-capture 2>&1; docker rm -f buza-tls-capture >/dev/null 2>&1 || true' | \
             sed -E 's/([0-9]{1,3}\.){3}[0-9]{1,3}/[ip]/g'
 
       - name: Test public HTTP and TLS from GitHub runner
