@@ -2,12 +2,13 @@ name: Diagnose Buza VPS
 
 on:
   workflow_dispatch:
-  push:
+  workflow_run:
+    workflows:
+      - Deploy Buza to VPS
+    types:
+      - completed
     branches:
       - master
-    paths:
-      - .github/workflows/diagnose-vps.yml
-      - Caddyfile.vps
 
 permissions:
   contents: read
@@ -18,6 +19,7 @@ concurrency:
 
 jobs:
   diagnose:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -43,7 +45,6 @@ jobs:
           set -eu
           test -n "$VPS_HOST"
           test -n "$VPS_USER"
-          sleep 55
           ssh -i "$HOME/.ssh/id_ed25519" -o IdentitiesOnly=yes \
             -o ServerAliveInterval=15 -o ServerAliveCountMax=2 -o ConnectTimeout=10 \
             "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
@@ -67,10 +68,38 @@ jobs:
           section 'Caddy configuration validation'
           docker exec buza-vps-caddy caddy validate --config /etc/caddy/Caddyfile 2>&1
 
-          section 'Recent Caddy logs (last 15 minutes, max 120 lines)'
-          docker logs --since 15m --tail 120 buza-vps-caddy 2>&1 | \
-            sed -E 's/([0-9]{1,3}\.){3}[0-9]{1,3}/[ip]/g'
           REMOTE
+
+      - name: Probe HTTPS from Russian Check-Host nodes
+        id: checkhost
+        run: |
+          set -eu
+          ip_response=$(curl -fsS --max-time 15 -H 'Accept: application/json' \
+            'https://check-host.net/check-http?host=https%3A%2F%2F89.111.152.194%2F&node=ru1.node.check-host.net&node=ru2.node.check-host.net&node=ru3.node.check-host.net')
+          domain_response=$(curl -fsS --max-time 15 -H 'Accept: application/json' \
+            'https://check-host.net/check-http?host=https%3A%2F%2F89-111-152-194.sslip.io%2F&node=ru1.node.check-host.net&node=ru2.node.check-host.net&node=ru3.node.check-host.net')
+          ip_id=$(printf '%s' "$ip_response" | jq -r .request_id)
+          domain_id=$(printf '%s' "$domain_response" | jq -r .request_id)
+          echo "IP report: https://check-host.net/check-report/$ip_id"
+          echo "SNI report: https://check-host.net/check-report/$domain_id"
+          sleep 16
+          echo '===== Russian Check-Host HTTPS result by IP ====='
+          curl -fsS --max-time 15 -H 'Accept: application/json' \
+            "https://check-host.net/check-result-extended/$ip_id" | jq .
+          echo '===== Russian Check-Host HTTPS result by hostname ====='
+          curl -fsS --max-time 15 -H 'Accept: application/json' \
+            "https://check-host.net/check-result-extended/$domain_id" | jq .
+
+      - name: Collect Caddy logs after Russian probes
+        env:
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_USER: ${{ vars.VPS_USER }}
+        run: |
+          set -eu
+          ssh -i "$HOME/.ssh/id_ed25519" -o IdentitiesOnly=yes \
+            -o ServerAliveInterval=15 -o ServerAliveCountMax=2 -o ConnectTimeout=10 \
+            "$VPS_USER@$VPS_HOST" 'docker logs --since 5m --tail 160 buza-vps-caddy 2>&1' | \
+            sed -E 's/([0-9]{1,3}\.){3}[0-9]{1,3}/[ip]/g'
 
       - name: Test public HTTP and TLS from GitHub runner
         env:
