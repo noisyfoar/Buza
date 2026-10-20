@@ -8,7 +8,7 @@
     debug
 }
 
-{$SITE_ADDRESS} {
+{$SITE_ADDRESS}, www.{$SITE_ADDRESS} {
     encode gzip
 
     tls {

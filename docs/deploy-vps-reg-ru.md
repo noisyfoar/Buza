@@ -50,13 +50,13 @@ docker compose --env-file .env.vps -f docker-compose.vps.yml logs -f caddy app
 
 ## 4. Когда появится домен
 
-Направьте DNS-запись A домена на IPv4 VPS, откройте `.env.vps`, замените `SITE_ADDRESS` на доменное имя и пересоздайте контейнеры:
+Для `buza.store` создайте DNS-записи A для `@` и `www`, обе должны указывать на публичный IPv4 VPS. Затем в `.env.vps` укажите `SITE_ADDRESS=buza.store` и пересоздайте контейнеры:
 
 ```bash
 docker compose --env-file .env.vps -f docker-compose.vps.yml up -d
 ```
 
-Caddy получит сертификат для домена и будет перенаправлять HTTP на HTTPS.
+Caddy получит сертификаты для `buza.store` и `www.buza.store` и будет перенаправлять HTTP на HTTPS. DNS-записи нужно добавить у провайдера DNS домена; если домен находится в аккаунте друга, это должен сделать владелец аккаунта.
 
 ## Обновление кода
 
