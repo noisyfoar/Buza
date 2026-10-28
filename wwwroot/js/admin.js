@@ -368,8 +368,12 @@ function eventPostForm(post = null) {
 }
 
 function bindEventPostForm() {
-  document.getElementById("eventPostForm").addEventListener("submit", saveEventPost);
+  const form = document.getElementById("eventPostForm");
+  form.addEventListener("submit", saveEventPost);
   document.getElementById("resetEventPostForm").addEventListener("click", () => fillEventPostForm(null));
+  form.querySelectorAll("[data-delete-event-image]").forEach((button) => {
+    button.addEventListener("click", () => deleteEventImage(Number(button.dataset.eventId), Number(button.dataset.deleteEventImage)));
+  });
 }
 
 function eventPostsTable() {
@@ -467,6 +471,10 @@ async function deleteEventImage(eventId, imageId) {
     setStatus("Картинка удалена.");
     await loadEvents();
     renderEventPosts();
+    const post = adminState.events.find((item) => item.id === eventId);
+    if (post) {
+      fillEventPostForm(post);
+    }
   } catch (error) {
     setStatus(error.message, true);
   }
